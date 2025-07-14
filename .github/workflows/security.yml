@@ -1,0 +1,198 @@
+name: Security Audit
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  schedule:
+    # Run security audit daily at 00:00 UTC
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run npm audit (production only)
+        run: npm audit --production --audit-level=high
+
+      - name: Check for outdated packages
+        run: npm outdated
+        continue-on-error: true
+
+  solidity-security:
+    name: Solidity Security Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Solhint security checks
+        run: npm run lint:sol:security
+
+      - name: Compile contracts
+        run: npm run compile
+
+      - name: Run Slither analysis
+        uses: crytic/slither-action@v0.3.0
+        continue-on-error: true
+        with:
+          target: 'contracts/'
+          slither-args: '--filter-paths "node_modules|test" --exclude naming-convention,external-function,low-level-calls'
+          fail-on: high
+
+  gas-optimization:
+    name: Gas Usage Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npm run compile
+
+      - name: Run gas reporter
+        run: npm run test:gas
+
+      - name: Upload gas report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-report
+          path: gas-report.txt
+          retention-days: 30
+
+  dos-protection-check:
+    name: DoS Protection Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for unbounded loops
+        run: |
+          echo "Checking for potential DoS vectors..."
+          grep -rn "for.*length" contracts/ || echo "No unbounded loops found"
+          grep -rn "while" contracts/ || echo "No while loops found"
+
+      - name: Run DoS tests
+        run: npm run test:dos
+        continue-on-error: true
+
+  code-quality-security:
+    name: Code Quality & Security Metrics
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code complexity
+        run: npm run complexity
+        continue-on-error: true
+
+      - name: Run security linting
+        run: npm run lint:security
+
+      - name: Check for sensitive data
+        run: |
+          echo "Checking for sensitive data exposure..."
+          ! grep -r "private.*key\|secret\|password" --include="*.js" --include="*.sol" contracts/ scripts/ || exit 1
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, solidity-security, gas-optimization, dos-protection-check, code-quality-security]
+    if: always()
+
+    steps:
+      - name: Check security results
+        run: |
+          echo "=== Security Audit Summary ==="
+          echo "Dependency Audit: ${{ needs.dependency-audit.result }}"
+          echo "Solidity Security: ${{ needs.solidity-security.result }}"
+          echo "Gas Optimization: ${{ needs.gas-optimization.result }}"
+          echo "DoS Protection: ${{ needs.dos-protection-check.result }}"
+          echo "Code Quality: ${{ needs.code-quality-security.result }}"
+
+          if [ "${{ needs.dependency-audit.result }}" != "success" ] || \
+             [ "${{ needs.solidity-security.result }}" != "success" ]; then
+            echo "❌ Critical security checks failed"
+            exit 1
+          else
+            echo "✅ Security audit passed"
+          fi

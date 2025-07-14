@@ -1,0 +1,173 @@
+name: Performance Optimization
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gas-benchmarks:
+    name: Gas Usage Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts with optimization
+        run: npm run compile
+
+      - name: Run gas benchmarks
+        run: npm run test:gas
+
+      - name: Generate gas report
+        run: |
+          echo "### Gas Usage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f gas-report.txt ]; then
+            cat gas-report.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload gas report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-benchmarks
+          path: gas-report.txt
+          retention-days: 90
+
+  contract-size-check:
+    name: Contract Size Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npm run compile
+
+      - name: Check contract sizes
+        run: npm run size-check
+
+      - name: Generate size report
+        run: |
+          echo "### Contract Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Maximum contract size: 24KB (24576 bytes)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          npm run size-check >> $GITHUB_STEP_SUMMARY || true
+
+  optimization-comparison:
+    name: Optimization Settings Comparison
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test with optimization (200 runs)
+        run: |
+          echo "Testing with 200 optimization runs..."
+          npm run compile
+          npm run test:gas > gas-200.txt || true
+
+      - name: Upload optimization comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimization-comparison
+          path: gas-*.txt
+          retention-days: 30
+
+  load-test:
+    name: Performance Load Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile contracts
+        run: npm run compile
+
+      - name: Run load tests
+        run: npm run test:load
+        continue-on-error: true
+
+      - name: Generate load test report
+        run: |
+          echo "### Load Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Load tests measure performance under high transaction volume" >> $GITHUB_STEP_SUMMARY
+
+  performance-summary:
+    name: Performance Summary
+    runs-on: ubuntu-latest
+    needs: [gas-benchmarks, contract-size-check, optimization-comparison]
+    if: always()
+
+    steps:
+      - name: Performance summary
+        run: |
+          echo "=== Performance Optimization Summary ==="
+          echo "Gas Benchmarks: ${{ needs.gas-benchmarks.result }}"
+          echo "Contract Size: ${{ needs.contract-size-check.result }}"
+          echo "Optimization: ${{ needs.optimization-comparison.result }}"
+
+          if [ "${{ needs.contract-size-check.result }}" != "success" ]; then
+            echo "⚠️  Contract size check failed - contract may be too large"
+          else
+            echo "✅ Performance checks completed"
+          fi
