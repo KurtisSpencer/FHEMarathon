@@ -1,0 +1,14 @@
+node_modules/
+artifacts/
+cache/
+coverage/
+typechain-types/
+deployments/
+*.min.js
+*.bundle.js
+dist/
+build/
+.env
+.env.*
+package-lock.json
+*.log
