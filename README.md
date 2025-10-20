@@ -1,8 +1,8 @@
 # Anonymous Marathon Registration System
 
-[![CI/CD Pipeline](https://github.com/username/anonymous-marathon/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/username/anonymous-marathon/actions)
-[![Tests](https://github.com/username/anonymous-marathon/workflows/Tests/badge.svg)](https://github.com/username/anonymous-marathon/actions)
-[![codecov](https://codecov.io/gh/username/anonymous-marathon/branch/main/graph/badge.svg)](https://codecov.io/gh/username/anonymous-marathon)
+[![CI/CD Pipeline](https://github.com/KurtisSpencer/FHEMarathon/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/KurtisSpencer/FHEMarathon/actions)
+[![Tests](https://github.com/KurtisSpencer/FHEMarathon/workflows/Tests/badge.svg)](https://github.com/KurtisSpencer/FHEMarathon/actions)
+[![codecov](https://codecov.io/gh/KurtisSpencer/FHEMarathon/branch/main/graph/badge.svg)](https://codecov.io/gh/KurtisSpencer/FHEMarathon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.24-blue)](https://soliditylang.org/)
 
@@ -10,9 +10,11 @@ A privacy-first long-distance running competition platform built with Fully Homo
 
 ## 🌐 Live Demo
 
-**Website**: [https://anonymous-marathon.vercel.app/](https://anonymous-marathon.vercel.app/)
+**Website**: [https://fhe-marathon.vercel.app/](https://fhe-marathon.vercel.app/)
 
-**Demo Video**: [View Demo](./AnonymousMarathon.mp4)
+**GitHub Repository**: [https://github.com/KurtisSpencer/FHEMarathon](https://github.com/KurtisSpencer/FHEMarathon)
+
+**Demo Video**: Download and view `demo.mp4` from this repository (the video file needs to be downloaded locally to watch, direct links cannot be opened)
 
 ## 📦 Quick Start
 
@@ -58,31 +60,38 @@ The Anonymous Marathon Registration System revolutionizes traditional race manag
 
 ## 🔐 Core Concepts
 
-### Fully Homomorphic Encryption (FHE)
+### FHE Contract Anonymous Marathon Registration - Privacy Long-Distance Running Competition System
 
-At the heart of this system is FHE technology, which allows computations to be performed on encrypted data without ever decrypting it. This means:
+This project represents a revolutionary approach to marathon registration and competition management through the integration of Fully Homomorphic Encryption (FHE) smart contracts. The core innovation lies in enabling runners to participate in competitive long-distance running events while maintaining complete privacy of their personal information throughout the entire process.
 
-- **Privacy Protection**: Personal information (age, experience level, previous race times) remains encrypted at all times
-- **Verifiable Results**: Race organizers can verify eligibility and calculate results without accessing raw participant data
-- **Zero-Knowledge Participation**: Runners compete under anonymous identifiers while maintaining data integrity
+#### What is FHE Contract Technology?
 
-### Anonymous Marathon Registration
+Fully Homomorphic Encryption (FHE) in smart contracts allows computations to be performed directly on encrypted data without ever needing to decrypt it. This breakthrough technology means:
 
-The system enables complete privacy in competitive running events:
+- **Privacy Protection**: Personal information (age, experience level, previous race times) remains encrypted at all times, even during verification and computation
+- **Verifiable Results**: Race organizers can verify eligibility, calculate rankings, and determine winners without accessing raw participant data
+- **Zero-Knowledge Participation**: Runners compete under anonymous identifiers while maintaining complete data integrity and competitive fairness
+- **On-Chain Privacy**: Unlike traditional blockchain systems where all data is publicly visible, FHE contracts keep sensitive information encrypted on-chain
 
-1. **Encrypted Profile Data**: Age, experience level, and historical performance data are encrypted on submission
-2. **Anonymous Identifiers**: Each participant selects a unique anonymous ID for public-facing race activities
-3. **Privacy-Preserving Leaderboards**: Results can be displayed and ranked without compromising participant identities
-4. **Secure Prize Distribution**: Winners can be verified and rewarded through smart contracts without revealing personal details
+#### Anonymous Marathon Registration System
 
-### Smart Contract Architecture
+The FHE contract enables a privacy-preserving long-distance running competition platform with the following key features:
 
-The system utilizes blockchain smart contracts to ensure:
+1. **Encrypted Profile Data**: When runners register, their age, experience level, and historical performance data are encrypted using FHE before being stored on the blockchain
+2. **Anonymous Identifiers**: Each participant selects a unique anonymous ID (pseudonym) for all public-facing race activities and leaderboards
+3. **Privacy-Preserving Leaderboards**: Results can be displayed, sorted, and ranked without compromising participant identities or decrypting personal data
+4. **Secure Prize Distribution**: Winners can be verified and rewarded through smart contracts without revealing personal details to anyone
+5. **Homomorphic Computations**: Rankings, eligibility checks, and statistical calculations are performed directly on encrypted data
 
-- **Decentralized Trust**: No single entity controls participant data
-- **Transparent Operations**: All race rules and logic are publicly verifiable
-- **Immutable Records**: Race results and registrations cannot be tampered with
-- **Automated Execution**: Registration, verification, and prize distribution happen automatically
+#### Smart Contract Architecture
+
+The FHE smart contract system ensures:
+
+- **Decentralized Trust**: No single entity controls or can access participant data in plaintext
+- **Transparent Operations**: All race rules, eligibility criteria, and logic are publicly verifiable on the blockchain
+- **Immutable Records**: Race results, registrations, and finish times cannot be tampered with or altered after submission
+- **Automated Execution**: Registration verification, time recording, leaderboard updates, and prize distribution happen automatically through smart contract logic
+- **Privacy by Design**: The architecture ensures privacy is maintained at every layer, from registration to final results
 
 ## 🎯 Key Features
 
