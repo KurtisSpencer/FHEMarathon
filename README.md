@@ -28,8 +28,24 @@ A privacy-first long-distance running competition platform built with Fully Homo
 ### Installation
 
 ```bash
-# Install dependencies
+# Install root dependencies
 npm install
+
+# Install anonymous-marathon dependencies
+cd anonymous-marathon
+npm install
+
+# Install React frontend dependencies (optional)
+cd frontend
+npm install
+cd ../..
+```
+
+### Smart Contract Development
+
+```bash
+# Navigate to anonymous-marathon
+cd anonymous-marathon
 
 # Configure environment
 cp .env.example .env
@@ -45,13 +61,33 @@ npm test
 npm run deploy:sepolia
 
 # Verify contract
-npm run verify
+npm run verify:sepolia
 
 # Interact with contract
 npm run interact
+```
 
-# Run simulation
-npm run simulate
+### Frontend Development
+
+#### Option 1: Static HTML Version (Original)
+```bash
+cd anonymous-marathon/static
+# Open index.html in browser or serve with:
+npx serve .
+```
+
+#### Option 2: React Version (with Universal FHEVM SDK)
+```bash
+cd anonymous-marathon/frontend
+
+# Development mode
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
 ## 📋 Overview
@@ -168,9 +204,26 @@ After race completion:
 - **Web3 Integration**: Ethers.js v6
 
 ### Frontend & UI
+
+#### Static Version (Original)
 - **HTML5, CSS3, JavaScript**: Modern web standards
 - **Responsive Design**: Mobile-first approach
 - **MetaMask Integration**: Seamless wallet connection
+- **Location**: `./static/` directory
+
+#### React Version (New - Universal FHEVM SDK)
+- **Framework**: Next.js 14 with App Router
+- **SDK**: Universal FHEVM SDK (`@fhevm/universal-sdk`)
+- **Language**: TypeScript with full type safety
+- **UI Components**: React components with FHE integration
+- **Hooks**: Custom React hooks for FHE operations
+- **Location**: `./anonymous-marathon/frontend/` directory
+- **Features**:
+  - Framework-agnostic SDK architecture
+  - Wagmi-like API for Web3 developers
+  - Pre-built UI components for FHE operations
+  - Complete encryption/decryption workflow
+  - Type-safe contract interactions
 
 ## 📝 Smart Contract Details
 
@@ -259,34 +312,71 @@ The simulation demonstrates:
 ## 📁 Project Structure
 
 ```
-anonymous-marathon-platform/
-├── contracts/
-│   └── AnonymousMarathon.sol    # Main smart contract
-├── scripts/
-│   ├── deploy.js                # Deployment script
-│   ├── verify.js                # Contract verification
-│   ├── interact.js              # Interactive CLI
-│   └── simulate.js              # Full workflow simulation
-├── test/
-│   └── [test files]             # Contract tests
-├── deployments/
-│   └── sepolia-deployment.json  # Deployment info
-├── hardhat.config.js            # Hardhat configuration
-├── package.json                 # Dependencies and scripts
+D:\
+├── anonymous-marathon/          # 🆕 Enhanced with React frontend
+│   ├── contracts/
+│   │   └── AnonymousMarathon.sol    # Main smart contract
+│   ├── frontend/                # 🆕 React/Next.js frontend with SDK
+│   │   ├── src/
+│   │   │   └── app/             # Next.js App Router
+│   │   ├── package.json         # Frontend dependencies
+│   │   ├── next.config.js       # Next.js configuration
+│   │   └── tsconfig.json        # TypeScript configuration
+│   ├── static/                  # Original HTML/JS frontend
+│   │   ├── index.html
+│   │   └── app.js
+│   ├── scripts/
+│   │   ├── deploy.js            # Deployment script
+│   │   ├── verify.js            # Contract verification
+│   │   ├── interact.js          # Interactive CLI
+│   │   └── simulate.js          # Full workflow simulation
+│   ├── test/                    # Contract tests
+│   ├── public/                  # Static assets
+│   ├── hardhat.config.js        # Hardhat configuration
+│   ├── package.json             # Project dependencies
+│   └── README.md                # Marathon documentation
+│
+├── fhevm-react-template/        # Universal FHEVM SDK Repository
+│   ├── packages/
+│   │   └── fhevm-sdk/           # Core SDK package
+│   ├── templates/               # Framework templates
+│   ├── examples/                # SDK examples
+│   └── docs/                    # SDK documentation
+│
+├── contracts/                   # Additional smart contracts
+├── scripts/                     # Build and deployment scripts
+├── test/                        # Test suites
 ├── .env.example                 # Environment template
-├── DEPLOYMENT.md                # Detailed deployment guide
+├── hardhat.config.js            # Root Hardhat configuration
+├── package.json                 # Root dependencies
+├── DEPLOYMENT.md                # Deployment guide
+├── SECURITY_PERFORMANCE.md      # Security documentation
+├── TESTING.md                   # Testing documentation
+├── CI_CD.md                     # CI/CD pipeline documentation
 └── README.md                    # This file
 ```
 
 ## 🎨 User Interface
 
-The application features a modern, intuitive interface with:
+### Static Version (Original)
+The static HTML/JavaScript application features:
 
 - **Green Theme**: Professional, eco-friendly design aesthetic
 - **Wallet Connection**: Seamless MetaMask integration
 - **Form Validation**: Real-time input validation and error handling
 - **Responsive Layout**: Mobile-first design approach
 - **Status Indicators**: Clear visual feedback for all operations
+
+### React Version (Universal FHEVM SDK)
+The new React/Next.js frontend leverages the Universal FHEVM SDK:
+
+- **Modern Architecture**: Next.js 14 App Router with server and client components
+- **SDK Integration**: Built on `@fhevm/universal-sdk` for simplified FHE operations
+- **Type Safety**: Full TypeScript support with IntelliSense
+- **Reusable Components**: Pre-built UI components for encryption/decryption
+- **Custom Hooks**: React hooks for FHE operations (`useFhevm`, `useEncrypt`, `useDecrypt`)
+- **Developer Experience**: Wagmi-like API familiar to Web3 developers
+- **Quick Setup**: Get started with less than 10 lines of code
 
 ## 🔒 Privacy & Security
 
@@ -359,23 +449,132 @@ The application features a modern, intuitive interface with:
 
 ### For Developers
 
-**See DEPLOYMENT.md for**:
+**Smart Contracts**:
+See DEPLOYMENT.md for:
 - Detailed deployment instructions
 - Network configuration
 - Troubleshooting guide
 - Gas estimation
 - Security best practices
 
+**Frontend Development**:
+
+Choose your preferred frontend approach:
+
+1. **Static Version** (`./anonymous-marathon/static/`):
+   - Pure HTML/CSS/JavaScript
+   - Direct Ethers.js integration
+   - No build process required
+   - Ideal for simple deployments
+
+2. **React Version** (`./anonymous-marathon/frontend/`):
+   - Next.js 14 with TypeScript
+   - Universal FHEVM SDK integration
+   - Modern development experience
+   - Advanced features and scalability
+
+**Universal FHEVM SDK Usage**:
+```typescript
+import { FhevmProvider, useFhevm, useEncrypt } from '@fhevm/universal-sdk';
+
+function App() {
+  return (
+    <FhevmProvider config={{ network: 'sepolia' }}>
+      <MyComponent />
+    </FhevmProvider>
+  );
+}
+
+function MyComponent() {
+  const { instance, ready } = useFhevm();
+  const { encrypt } = useEncrypt();
+
+  const handleEncrypt = async () => {
+    const encrypted = await encrypt(42, 'uint32');
+    // Use encrypted data in contract calls
+  };
+
+  return <button onClick={handleEncrypt}>Encrypt Data</button>;
+}
+```
+
+**SDK Documentation**:
+- See `./fhevm-react-template/README.md` for complete SDK documentation
+- API Reference: `./fhevm-react-template/docs/API.md`
+- More examples in `./fhevm-react-template/examples/`
+
+## 🆕 What's New - Universal FHEVM SDK Integration
+
+This project now includes two frontend implementations:
+
+### 1. Original Static Version
+- **Location**: `./anonymous-marathon/static/`
+- **Technology**: HTML5, CSS3, JavaScript
+- **Status**: Fully functional, production-ready
+- **Best For**: Simple deployments, learning FHE basics
+
+### 2. New React Version with Universal FHEVM SDK
+- **Location**: `./anonymous-marathon/frontend/`
+- **Technology**: Next.js 14, TypeScript, Universal FHEVM SDK
+- **Status**: Development version with SDK integration showcase
+- **Best For**: Modern development, scalable applications, SDK learning
+
+### Universal FHEVM SDK Features
+
+The new React frontend demonstrates the power of the Universal FHEVM SDK:
+
+✨ **Framework Agnostic**: Core functionality works with React, Next.js, Vue, or Node.js
+
+✨ **Simplified API**: Wagmi-like hooks for Web3 developers
+```typescript
+const { instance, ready } = useFhevm();
+const { encrypt, encrypting } = useEncrypt();
+const { decrypt, decrypting } = useDecrypt();
+```
+
+✨ **Pre-built Components**: Ready-to-use UI components
+```typescript
+<FhevmProvider config={{ network: 'sepolia' }}>
+  <EncryptInput onEncrypt={handleEncrypt} />
+  <DecryptOutput encryptedValue={data} />
+</FhevmProvider>
+```
+
+✨ **Type Safety**: Full TypeScript support with IntelliSense
+
+✨ **Quick Setup**: Get started in less than 10 lines of code
+
+✨ **Modular Design**: Use only what you need
+
+### SDK Repository
+
+The complete Universal FHEVM SDK is available in:
+- **Path**: `./fhevm-react-template/`
+- **Package**: `@fhevm/universal-sdk`
+- **Documentation**: See `./fhevm-react-template/README.md`
+- **Examples**: Multiple framework examples included
+- **Templates**: Quick-start templates for Next.js, React, Vue, Node.js
+
+### Migration Path
+
+Developers can choose their preferred approach:
+- Use the **static version** for immediate deployment
+- Explore the **React version** to learn the SDK
+- Build new features using the SDK's modern architecture
+- Mix both approaches based on project needs
+
 ## 🤝 Contributing
 
 We welcome contributions from the community! Areas where you can help:
 
 - **Smart Contract Development**: Enhance contract functionality
-- **UI/UX Improvements**: Enhance the user interface
+- **UI/UX Improvements**: Enhance the user interface (both versions)
+- **SDK Integration**: Help improve the React version with more SDK features
 - **Security Audits**: Review smart contract code
 - **Feature Development**: Add new functionality
 - **Documentation**: Improve guides and tutorials
 - **Testing**: Help identify and report bugs
+- **SDK Examples**: Create more examples using the Universal FHEVM SDK
 
 ## 📧 Support
 
@@ -384,10 +583,79 @@ For questions, issues, or suggestions:
 - Check existing documentation in DEPLOYMENT.md
 - Review the demo video for guidance
 - Consult Hardhat documentation
+- For SDK questions: See `./fhevm-react-template/README.md`
+- SDK API Reference: `./fhevm-react-template/docs/API.md`
+
+## 🔗 Related Resources
+
+### Universal FHEVM SDK
+- **Documentation**: `./fhevm-react-template/README.md`
+- **API Reference**: `./fhevm-react-template/docs/API.md`
+- **Examples**: `./fhevm-react-template/examples/`
+- **Templates**: `./fhevm-react-template/templates/`
+
+### Smart Contracts
+- **Deployment Guide**: `./DEPLOYMENT.md`
+- **Security**: `./SECURITY_PERFORMANCE.md`
+- **Testing**: `./TESTING.md`
+- **CI/CD**: `./CI_CD.md`
+
+### Anonymous Marathon
+- **Main Documentation**: `./anonymous-marathon/README.md`
+- **Static Frontend**: `./anonymous-marathon/static/`
+- **React Frontend**: `./anonymous-marathon/frontend/`
+- **Contracts**: `./anonymous-marathon/contracts/`
+
+## 📊 Frontend Technology Comparison
+
+| Feature | Static Version | React Version (SDK) |
+|---------|---------------|---------------------|
+| **Framework** | Vanilla JS | Next.js 14 + TypeScript |
+| **FHE Integration** | Direct fhevmjs | Universal FHEVM SDK |
+| **Setup Time** | Immediate | < 10 lines of code |
+| **Type Safety** | None | Full TypeScript |
+| **Reusable Components** | None | Pre-built components |
+| **Build Process** | Not required | Next.js build |
+| **Learning Curve** | Moderate | Easy (wagmi-like API) |
+| **Scalability** | Limited | High |
+| **Best For** | Quick demos | Production apps |
+| **Status** | Production | Development showcase |
+
+### Which Version Should I Use?
+
+**Use the Static Version if**:
+- You need immediate deployment
+- You want to learn FHE from scratch
+- You prefer simple, direct integration
+- You don't need TypeScript
+
+**Use the React Version if**:
+- You're building a production application
+- You want modern development tools
+- You need TypeScript and type safety
+- You prefer component-based architecture
+- You want to leverage the Universal FHEVM SDK
+
+**Use Both if**:
+- You want to compare implementations
+- You're learning both approaches
+- You need to migrate from static to React
 
 ## 🙏 Acknowledgments
 
-This project demonstrates the power of combining blockchain technology with Fully Homomorphic Encryption to create privacy-preserving applications. Special thanks to the FHE and Web3 communities for their groundbreaking work in cryptography and decentralized systems.
+This project demonstrates the power of combining blockchain technology with Fully Homomorphic Encryption to create privacy-preserving applications.
+
+**Special Thanks**:
+- **Zama**: For the groundbreaking FHEVM technology and fhevmjs library
+- **Universal FHEVM SDK**: For simplifying FHE integration in modern web applications
+- **Web3 Community**: For continuous innovation in decentralized systems
+- **FHE Research Community**: For advancing homomorphic encryption technology
+
+**Technology Stack Credits**:
+- Hardhat for smart contract development
+- Ethers.js for blockchain interaction
+- Next.js for modern React framework
+- TypeScript for type safety
 
 ## 📄 License
 
@@ -396,3 +664,5 @@ MIT License - see LICENSE file for details
 ---
 
 **Built with privacy in mind. Run with confidence. Compete with anonymity.**
+
+🔐 **Two frontends. One vision. Complete privacy.**
