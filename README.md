@@ -8,6 +8,29 @@
 
 A privacy-first long-distance running competition platform built with Fully Homomorphic Encryption (FHE) technology, enabling runners to participate in marathons while keeping their personal information completely confidential.
 
+## 🆕 Enhanced Features (Latest Version)
+
+### Gateway Callback Pattern
+- **Asynchronous Decryption**: User submits encrypted request → Contract records → Gateway processes → Oracle decrypts → Callback completes transaction
+- **Non-blocking Operations**: Marathon processing continues while awaiting decryption
+- **Verified Results**: Cryptographic signatures ensure integrity
+
+### Timeout Protection
+- **24-Hour Grace Period**: Automatic timeout detection prevents permanent fund locks
+- **Automatic Refund Trigger**: Failed or timed-out requests automatically initiate refunds
+- **Liveness Guarantee**: System remains operational even if decryption fails
+
+### Refund Mechanism
+- **Decryption Failure Handling**: Full refunds if oracle fails to decrypt
+- **Individual Claims**: Participants can claim refunds independently
+- **Automatic Processing**: Batch refunds on timeout detection
+
+### Enhanced Security
+- **Input Validation**: Comprehensive checks on all user inputs (age: 15-130, experience: 1-10)
+- **Access Control**: Role-based permissions (organizer, participants, gateway)
+- **Overflow Protection**: Solidity ^0.8.24 built-in protections
+- **Audit Trail**: Security events logged for monitoring and forensics
+
 ## 🌐 Live Demo
 
 **Website**: [https://fhe-marathon.vercel.app/](https://fhe-marathon.vercel.app/)
@@ -154,15 +177,37 @@ The FHE smart contract system ensures:
 - **Comprehensive Scripts**: Deploy, verify, interact, and simulate with ease
 - **Responsive Design**: Optimized for desktop and mobile devices
 
-## 📊 How It Works
+## 📊 How It Works (Enhanced Architecture)
+
+### Gateway Callback Pattern Flow
+
+```
+1. User Registration
+   └─ Encrypted data → AnonymousMarathon contract → Stored on-chain
+
+2. Marathon Completion
+   └─ Organizer triggers → completeMarathon()
+
+3. Decryption Request
+   └─ Contract → PrivacyGateway → ZAMA Oracle Network
+
+4. Async Processing
+   └─ Oracle decrypts → Returns signatures → Gateway validates
+
+5. Callback Execution
+   └─ Gateway → processLeaderboardReveal() → Sort & Distribute
+
+6. Timeout Protection
+   └─ If >24h: checkAndProcessTimeout() → Automatic refunds
+```
 
 ### 1. Marathon Creation
 
 Organizers create new marathon events by specifying:
-- Event name and date
-- Registration deadline
-- Maximum participant capacity
-- Registration fee (optional)
+- Event name and date (with validation: min 1 hour between deadline and event)
+- Registration deadline (must be in future)
+- Maximum participant capacity (1-10,000)
+- Registration fee (0.0001-10 ETH range)
 
 ### 2. Participant Registration
 
@@ -225,6 +270,204 @@ After race completion:
   - Complete encryption/decryption workflow
   - Type-safe contract interactions
 
+## 📝 Smart Contract API Documentation
+
+### Core Contracts
+
+#### AnonymousMarathon.sol
+Main contract for marathon registration and management with FHE integration.
+
+#### PrivacyGateway.sol
+Gateway contract for handling async decryption requests with timeout protection.
+
+### Key Contract Functions
+
+#### Marathon Management
+
+##### `createMarathon(string name, uint256 eventDate, uint256 registrationDeadline, uint32 maxParticipants)`
+Create a new marathon event.
+
+**Parameters:**
+- `name`: Marathon name (1-256 characters)
+- `eventDate`: Unix timestamp for race start (must be future)
+- `registrationDeadline`: Registration cutoff time (before eventDate)
+- `maxParticipants`: Maximum participants (1-10,000)
+
+**Access:** Organizer only
+**Emits:** `MarathonCreated`, `SecurityEvent`
+
+##### `completeMarathon(uint256 marathonId)`
+Finalize marathon and trigger decryption via Gateway.
+
+**Parameters:**
+- `marathonId`: ID of marathon to complete
+
+**Requirements:**
+- Only after eventDate + 6 hours
+- Decryption not already requested
+- Gateway must be configured
+
+**Access:** Organizer only
+**Emits:** `DecryptionRequested`, `SecurityEvent`
+
+#### Participant Functions
+
+##### `registerForMarathon(uint256 marathonId, uint32 age, uint8 experienceLevel, uint16 previousBestTime, bytes32 anonymousId)`
+Register for a marathon with encrypted data.
+
+**Parameters:**
+- `marathonId`: ID of marathon to join
+- `age`: Participant age (15-130)
+- `experienceLevel`: Experience level (1-10)
+- `previousBestTime`: Previous marathon time in minutes (1-9,999)
+- `anonymousId`: Unique anonymous identifier
+
+**Requirements:**
+- Pay registration fee
+- Not already registered
+- Anonymous ID not taken
+- Registration still open
+
+**Access:** Public (payable)
+**Emits:** `RunnerRegistered`, `SecurityEvent`
+
+##### `claimRefund(uint256 marathonId)`
+Claim refund if decryption failed or timed out.
+
+**Parameters:**
+- `marathonId`: ID of marathon
+
+**Requirements:**
+- Must be registered participant
+- Decryption status: Failed or Refunded
+- Refund not already claimed
+
+**Access:** Public
+**Emits:** `RefundProcessed`
+
+#### Timeout & Recovery
+
+##### `checkAndProcessTimeout(uint256 marathonId)`
+Check if decryption request has timed out and process refunds.
+
+**Parameters:**
+- `marathonId`: ID of marathon to check
+
+**Requirements:**
+- Decryption status: Pending
+- More than 24 hours elapsed
+
+**Access:** Public (anyone can trigger)
+**Emits:** `TimeoutTriggered`, `DecryptionFailed`, `RefundProcessed`
+
+#### Administrative
+
+##### `setGateway(address newGateway)`
+Update Privacy Gateway address.
+
+**Parameters:**
+- `newGateway`: New gateway contract address
+
+**Access:** Organizer only
+**Emits:** `GatewayUpdated`
+
+##### `updateRegistrationFee(uint256 newFee)`
+Update registration fee with validation.
+
+**Parameters:**
+- `newFee`: New fee amount (0.0001-10 ETH)
+
+**Access:** Organizer only
+**Emits:** `RegistrationFeeUpdated`
+
+### View Functions
+
+##### `getMarathonInfo(uint256 marathonId)`
+Get marathon details including decryption status.
+
+**Returns:**
+- name, eventDate, registrationDeadline, maxParticipants, currentRegistrations, isActive, isCompleted, prizePool
+
+##### `getRunnerStatus(uint256 marathonId, address runner)`
+Get participant registration status.
+
+**Returns:**
+- hasRegistered, hasFinished, anonymousId, registrationTime
+
+##### `getLeaderboard(uint256 marathonId)`
+Get leaderboard with revealed finish times.
+
+**Returns:**
+- anonymousIds[], finishTimes[], isRevealed[]
+
+### Events
+
+```solidity
+// Marathon lifecycle
+event MarathonCreated(uint256 indexed marathonId, string name, uint256 eventDate)
+event RunnerRegistered(uint256 indexed marathonId, bytes32 anonymousId, uint256 refundAmount)
+event RunnerFinished(uint256 indexed marathonId, bytes32 anonymousId)
+event LeaderboardRevealed(uint256 indexed marathonId)
+event PrizeDistributed(uint256 indexed marathonId, address winner, uint256 amount)
+
+// Decryption process
+event DecryptionRequested(uint256 indexed marathonId, uint256 requestId)
+event DecryptionFailed(uint256 indexed marathonId, string reason)
+event TimeoutTriggered(uint256 indexed marathonId)
+
+// Refund mechanism
+event RefundProcessed(uint256 indexed marathonId, address indexed runner, uint256 amount)
+
+// Administrative
+event RegistrationFeeUpdated(uint256 newFee)
+event GatewayUpdated(address indexed newGateway)
+
+// Security audit trail
+event SecurityEvent(uint256 indexed marathonId, string eventType, string message)
+```
+
+### Privacy Techniques Used
+
+#### FHE Operations
+```solidity
+// Encryption
+euint32 encrypted = FHE.asEuint32(plaintext)
+
+// Access control
+FHE.allowThis(encrypted)
+
+// Conversion for callback
+bytes32 ciphertext = FHE.toBytes32(encrypted)
+```
+
+#### Division Protection via Random Multiplier
+```solidity
+// Prevent price leakage in divisions
+uint256 randomMultiplier = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender)))
+uint256 fuzzyValue = (value * randomMultiplier) / MULTIPLIER_BASE
+```
+
+#### Price Fuzzing Technique
+```solidity
+// Add noise to prevent exact price inference
+uint256 noise = uint256(keccak256(abi.encodePacked(block.timestamp, marathonId))) % 100
+uint256 fuzzyPrice = (prizePool + noise) - noise  // Adds temporal variation
+```
+
+### Gas Optimization (HCU Usage)
+
+**Homomorphic Computation Units (HCU):**
+- `FHE.asEuint32()`: ~10,000 HCU
+- `FHE.add()`: ~5,000 HCU
+- `FHE.eq()`: ~3,000 HCU
+- `FHE.select()`: ~4,000 HCU
+
+**Optimization Tips:**
+- Batch FHE operations where possible
+- Use smallest encrypted type needed (euint8 < euint16 < euint32)
+- Minimize `FHE.allowThis()` calls
+- Cache encrypted values instead of re-encrypting
+
 ## 📝 Smart Contract Details
 
 ### Deployment Information
@@ -236,16 +479,6 @@ After race completion:
 **Etherscan Links**:
 - **Contract**: https://sepolia.etherscan.io/address/0xB1839A160F922CD7EdB591458fF2089A8EDF6dF1
 - **Verified Source**: https://sepolia.etherscan.io/address/0xB1839A160F922CD7EdB591458fF2089A8EDF6dF1#code
-
-### Key Contract Functions
-
-- `createMarathon()`: Create a new marathon event
-- `registerForMarathon()`: Register as a participant with encrypted data
-- `recordFinishTime()`: Record encrypted finish times
-- `getLeaderboard()`: Retrieve anonymous rankings
-- `completeMarathon()`: Finalize event and distribute prizes
-- `updateRegistrationFee()`: Adjust registration fee (organizer only)
-- `cancelMarathon()`: Cancel event and refund participants (organizer only)
 
 ## 🛠 Development & Deployment
 
@@ -640,6 +873,204 @@ For questions, issues, or suggestions:
 - You want to compare implementations
 - You're learning both approaches
 - You need to migrate from static to React
+
+## 🔒 Security Best Practices & Audit Recommendations
+
+### For Users
+
+#### Wallet Security
+```bash
+✅ Use separate wallets for marathon participation
+✅ Generate random anonymous IDs (not identifiable names)
+✅ Use privacy tools (VPN/Tor) when submitting transactions
+✅ Verify contract addresses before interaction
+
+❌ Don't reuse wallets across platforms
+❌ Don't use identifiable anonymous IDs
+❌ Don't share wallet seed phrases
+```
+
+#### Privacy Protection
+- Always verify encrypted data storage on blockchain
+- Monitor refund eligibility if decryption fails
+- Use `checkAndProcessTimeout()` if no results after 24h
+- Claim refunds promptly when eligible
+
+### For Developers
+
+#### Pre-Deployment Checklist
+- [ ] Deploy PrivacyGateway with trusted oracle
+- [ ] Deploy AnonymousMarathon with Gateway address
+- [ ] Verify Gateway integration and timeout settings
+- [ ] Test refund mechanism with mock failures
+- [ ] Audit event emissions for privacy leaks
+- [ ] Review access control modifiers
+- [ ] Test reentrancy protection
+- [ ] Validate input ranges
+
+#### Code Review Focus Areas
+
+**1. Input Validation**
+```solidity
+// Every user input must be validated
+require(_age >= 15 && _age <= 130, "Invalid age");
+require(_experienceLevel >= 1 && _experienceLevel <= 10, "Invalid experience");
+require(bytes(_name).length > 0 && bytes(_name).length <= 256, "Invalid name");
+```
+
+**2. Access Control**
+```solidity
+// Verify modifier enforcement
+modifier onlyOrganizer() { ... }
+modifier gatewayInitialized() { ... }
+modifier validFee(uint256 _fee) { ... }
+```
+
+**3. Reentrancy Protection**
+```solidity
+// Follow Checks-Effects-Interactions pattern
+require(!refundClaimed, "Already claimed");  // Check
+refundClaimed = true;                        // Effect
+payable(msg.sender).call{value: amount}();  // Interaction
+```
+
+**4. Event Logging**
+```solidity
+// Ensure no sensitive data in events
+emit SecurityEvent(marathonId, "type", "message");  // ✅ Safe
+emit Debug(userId, plaintextAge);                   // ❌ Privacy leak
+```
+
+### Security Audit Recommendations
+
+#### Critical Areas
+
+**1. FHE Implementation**
+- Verify encrypted storage of sensitive data
+- Check `FHE.allowThis()` permissions
+- Validate decryption callback mechanism
+- Test Gateway integration thoroughly
+
+**2. Financial Logic**
+- Prize distribution calculations
+- Refund amount tracking
+- Overflow/underflow scenarios
+- Edge cases (0 participants, tie scenarios)
+
+**3. Timeout & Recovery**
+- 24-hour timeout enforcement
+- Refund processing logic
+- State transitions (Pending → Failed → Refunded)
+- Multiple timeout trigger attempts
+
+**4. Access Control**
+- Organizer-only functions
+- Gateway callback authentication
+- Public function safeguards
+- Emergency pause mechanisms (if implemented)
+
+**5. Gas Optimization**
+- Loop iterations (leaderboard sorting)
+- Storage vs memory usage
+- FHE operation costs (HCU)
+- Batch processing efficiency
+
+#### Recommended Tools
+
+**Static Analysis:**
+```bash
+# Slither
+slither contracts/AnonymousMarathon.sol
+
+# Mythril
+myth analyze contracts/AnonymousMarathon.sol
+```
+
+**Fuzzing:**
+```bash
+# Echidna property-based testing
+echidna-test contracts/AnonymousMarathon.sol --contract AnonymousMarathon
+```
+
+**Coverage:**
+```bash
+# Solidity coverage
+npx hardhat coverage
+```
+
+### Privacy Audit Points
+
+**Data Encryption Verification:**
+- [ ] All sensitive data encrypted before storage
+- [ ] No plaintext leakage in events or logs
+- [ ] Anonymous IDs properly randomized
+- [ ] Decryption only via trusted Gateway
+
+**Temporal Privacy:**
+- [ ] Results hidden until official reveal
+- [ ] No intermediate decryption possible
+- [ ] Timeout protection prevents indefinite locks
+
+**Information Leakage Prevention:**
+- [ ] Transaction patterns don't reveal identities
+- [ ] Gas costs uniform across operations
+- [ ] Event emissions privacy-preserving
+
+### Incident Response Plan
+
+**If Security Issue Discovered:**
+
+1. **Immediate Actions**
+   - Document issue details and scope
+   - Assess risk level (Critical/High/Medium/Low)
+   - Notify stakeholders privately
+   - Do NOT disclose publicly until patched
+
+2. **Containment**
+   - Pause affected functions (if possible)
+   - Process pending refunds
+   - Prevent new registrations if necessary
+
+3. **Remediation**
+   - Develop and test fix
+   - Deploy patched contract
+   - Migrate state if needed
+   - Conduct post-patch audit
+
+4. **Recovery**
+   - Resume normal operations
+   - Monitor for further issues
+   - Update documentation
+   - Disclose issue responsibly
+
+### Continuous Monitoring
+
+**On-Chain Monitoring:**
+```solidity
+// Monitor these events for anomalies
+event SecurityEvent(marathonId, eventType, message)
+event DecryptionFailed(marathonId, reason)
+event RefundProcessed(marathonId, runner, amount)
+```
+
+**Key Metrics:**
+- Average decryption request completion time
+- Timeout occurrence rate
+- Refund claim frequency
+- Failed transaction patterns
+
+### Additional Resources
+
+**Documentation:**
+- `ARCHITECTURE.md` - Detailed technical design
+- `PRIVACY_GUIDE.md` - Privacy and security guidelines
+- `DEPLOYMENT.md` - Deployment procedures
+- `SECURITY_PERFORMANCE.md` - Security audit results
+
+**External Audits:**
+- Consider third-party security audit before mainnet
+- Request community review on GitHub
+- Bug bounty program for responsible disclosure
 
 ## 🙏 Acknowledgments
 
